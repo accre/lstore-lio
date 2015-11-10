@@ -35,6 +35,7 @@ http://www.accre.vanderbilt.edu
 #include "log.h"
 #include "string_token.h"
 #include "zlib.h"
+#include "adler32_opt.h"
 #include "ex3_compare.h"
 
 //***********************************************************************
@@ -250,7 +251,7 @@ void lio_store_and_release_adler32(lio_config_t *lc, creds_t *creds, list_t *wri
     char value[256];
     stack = new_stack();
     it = list_iter_search(write_table, 0, 0);
-    cksum = adler32(0L, Z_NULL, 0);
+    cksum = opt_adler32(0L, Z_NULL, 0);
     missing = next = overlap = nbytes = 0;
     while (list_next(&it, (list_key_t **)&aoff, (list_data_t **)&a32) == 0) {
         aval = a32->adler32;
@@ -270,7 +271,7 @@ void lio_store_and_release_adler32(lio_config_t *lc, creds_t *creds, list_t *wri
         }
 
         nbytes += a32->len;
-        cksum = adler32_combine(cksum, a32->adler32, a32->len);
+        cksum = opt_adler32_combine(cksum, a32->adler32, a32->len);
 
         next = a32->offset + a32->len;
     }
@@ -1031,7 +1032,7 @@ op_status_t lio_write_ex_fn(void *arg, int id)
             type_malloc(a32, lfs_adler32_t, 1);
             a32->offset = iov[i].offset;
             a32->len = iov[i].len;
-            a32->adler32 = adler32(0L, Z_NULL, 0);
+            a32->adler32 = opt_adler32(0L, Z_NULL, 0);
 
             //** This is sloppy should use tbuffer_next to do this but this is all going ot be thrown away once we track
             //** down the gridftp plugin issue
@@ -1042,7 +1043,7 @@ op_status_t lio_write_ex_fn(void *arg, int id)
             }
             tbuffer_single(&tb, a32->len, (char *)buf);
             tbuffer_copy(buffer, bpos, &tb, 0, a32->len, 1);
-            a32->adler32 = adler32(a32->adler32, buf, a32->len);
+            a32->adler32 = opt_adler32(a32->adler32, buf, a32->len);
             segment_lock(fd->fh->seg);
             list_insert(fd->fh->write_table, &(a32->offset), a32);
             segment_unlock(fd->fh->seg);

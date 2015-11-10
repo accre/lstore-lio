@@ -1,3 +1,13 @@
+
+set(LocalOverrideFile "${CMAKE_SOURCE_DIR}/../CMakeOverride.cmake")
+if(EXISTS "${LocalOverrideFile}")
+    message(STATUS "Found local override file for CMake settings (${LocalOverrideFile})")
+    include(${LocalOverrideFile})
+else(EXISTS "${LocalOverrideFile}")
+    message(STATUS "No optional local override file found (${LocalOverrideFile})")
+endif(EXISTS "${LocalOverrideFile}")
+
+
 # Function to try and find static versions of shared libraries
 macro(static_name full_name static)
     get_filename_component(lname ${full_name} NAME_WE)
@@ -37,11 +47,13 @@ cmake_dependent_option(WANT_STATIC "Attempt to build and link statically" TRUE
                                    "NOT WANT_PACKAGE" FALSE)
 cmake_dependent_option(WANT_DEBUG "Build with debug flags" TRUE
                                    "NOT WANT_PACKAGE" FALSE)
-if(WANT_DEBUG)
+if(WANT_DEBUG OR LSTORE_FORCE_DEBUG)
     set(CMAKE_BUILD_TYPE "Debug")
+    message(STATUS "Performing a debug build")
 else()
     set(CMAKE_BUILD_TYPE "Release")
-endif(WANT_DEBUG)
+    message(STATUS "Performing a release build")
+endif(WANT_DEBUG OR LSTORE_FORCE_DEBUG)
 
 # Set preprocessor flags. TODO: This should be moved to config.h
 # TODO: This should be probably modified if we build on something different

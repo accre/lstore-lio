@@ -37,6 +37,7 @@ http://www.accre.vanderbilt.edu
 #define _log_module_index 178
 
 #include <zlib.h>
+#include "adler32_opt.h"
 #include "ex3_abstract.h"
 #include "ex3_system.h"
 #include "interval_skiplist.h"
@@ -139,8 +140,8 @@ void je_cksum_calc(char *magic, char **ptr, int n_devs, int chunk_size)
     unsigned char *m = (unsigned char *)magic;
     int i;
 
-    cksum = adler32(0L, Z_NULL, 0);
-    for (i=0; i<n_devs; i++) cksum = adler32(cksum, (unsigned char *)ptr[i], chunk_size);
+    cksum = opt_adler32(0L, Z_NULL, 0);
+    for (i=0; i<n_devs; i++) cksum = opt_adler32(cksum, (unsigned char *)ptr[i], chunk_size);
     for (i=0; i<JE_MAGIC_SIZE; i++) {
         m[i] = cksum & 255;
         cksum >>= 8;

@@ -31,6 +31,7 @@ http://www.accre.vanderbilt.edu
 #include "assert_result.h"
 #include <stdio.h>
 #include "zlib.h"
+#include "adler32_opt.h"
 #include "type_malloc.h"
 #include "string_token.h"
 
@@ -41,10 +42,10 @@ http://www.accre.vanderbilt.edu
 uLong adler32_fd(FILE *fd, unsigned char *buffer, int bufsize)
 {
     int nbytes;
-    uLong adler = adler32(0L, Z_NULL, 0);
+    uLong adler = opt_adler32(0L, Z_NULL, 0);
 
     while ((nbytes = fread(buffer, 1, bufsize, fd)) > 0) {
-        adler = adler32(adler, buffer, nbytes);
+        adler = opt_adler32(adler, buffer, nbytes);
     }
 
     return(adler);
