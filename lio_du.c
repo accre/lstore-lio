@@ -219,8 +219,12 @@ int main(int argc, char **argv)
                 plen = strlen(fname);
                 type_malloc(de->fname, char, plen + 2);
                 memcpy(de->fname, fname, plen);
-                de->fname[plen] = '/';
-                de->fname[plen+1] = 0;
+                if (ftype & OS_OBJECT_DIR) {  //** Add a trailing '/' for directories only
+                   de->fname[plen] = '/';
+                   de->fname[plen+1] = 0;
+                } else {  //** Don't forget to NULL terminate the string
+                   de->fname[plen] = 0;
+                }
                 free(fname);
                 de->ftype = ftype;
 
