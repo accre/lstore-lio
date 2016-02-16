@@ -145,6 +145,7 @@ int main(int argc, char **argv)
     lio_path_tuple_t dtuple;
     int keepln, err, dtype;
     op_status_t status;
+    int n_errors;
 
 //printf("argc=%d\n", argc);
     if (argc < 2) {
@@ -203,6 +204,8 @@ int main(int argc, char **argv)
         }
     }
 
+    n_errors = 0; //** Initialize the error count
+
     //** Do some sanity checking and handle the simple case directly
     //** If multiple paths then the dest must be a dir and it has to exist
     if ((n_paths > 1) && ((dtype & OS_OBJECT_DIR) == 0)) {
@@ -211,6 +214,7 @@ int main(int argc, char **argv)
         } else {
             info_printf(lio_ifd, 0, "ERROR: Multiple paths selected but the dest(%s) isn't a directory!\n", dtuple.path);
         }
+        n_errors = 1;
         goto finished;
     } else if (n_paths == 1) {
         log_printf(15, "11111111\n");
@@ -218,6 +222,7 @@ int main(int argc, char **argv)
         if (((dtype & OS_OBJECT_FILE) > 0) || (dtype == 0)) {  //** Single path and dest is an existing file or doesn't exist
             if (os_regex_is_fixed(flist[0].regex) == 0) {  //** Uh oh we have a wildcard with a single file dest
                 info_printf(lio_ifd, 0, "ERROR: Single wildcard path(%s) selected but the dest(%s) is a file or doesn't exist!\n", flist[0].src_tuple.path, dtuple.path);
+                n_errors = 1;
                 goto finished;
             }
         }
@@ -227,6 +232,8 @@ int main(int argc, char **argv)
 
         //**if it's a fixed src with a dir dest we skip and use the mv_fn routines
         if ((os_regex_is_fixed(flist[0].regex) == 1) && ((dtype == 0) || ((dtype & OS_OBJECT_FILE) > 0))) {
+            n_errors = 1;  //** Default is an error
+
             //** IF we made it here we have a simple mv but we need to preserve the dest file if things go wrong
             fname = NULL;
             if ((dtype & OS_OBJECT_FILE) > 0) { //** Existing file so rename it for backup
@@ -271,6 +278,7 @@ int main(int argc, char **argv)
             log_printf(15, "55555555555555555\n");
             flush_log();
 
+            n_errors = 0;  //** If we made it here the simple mv was successfull
             goto finished;
         }
     }
@@ -293,7 +301,10 @@ int main(int argc, char **argv)
             gop = opque_waitany(q);
             j = gop_get_myid(gop);
             status = gop_get_status(gop);
-            if (status.op_status != OP_STATE_SUCCESS) info_printf(lio_ifd, 0, "Failed with path %s\n", flist[j].src_tuple.path);
+            if (status.op_status != OP_STATE_SUCCESS) {
+                info_printf(lio_ifd, 0, "Failed with path %s\n", flist[j].src_tuple.path);
+                n_errors += status.error_code;
+            }
             gop_free(gop, OP_DESTROY);
         }
     }
@@ -303,6 +314,7 @@ int main(int argc, char **argv)
         while ((gop = opque_get_next_failed(q)) != NULL) {
             j = gop_get_myid(gop);
             info_printf(lio_ifd, 0, "Failed with path %s\n", flist[j].src_tuple.path);
+            n_errors += status.error_code;
         }
     }
 
@@ -319,6 +331,6 @@ finished:
     free(flist);
     lio_shutdown();
 
-    return(0);
+    return(n_errors);
 }
 
