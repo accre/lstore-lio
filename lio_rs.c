@@ -120,7 +120,8 @@ void print_rid_summary(char *config, int base)
                 ele = inip_next_element(ele);
             }
 
-            if (rsum->status == 0) {
+            //** Only include UP and NO_SPACE RIDs in the usable count
+            if ((rsum->status == 0) || (rsum->status == 2)) {
                 n_usable++;
                 up_free += rsum->free;
                 up_used += rsum->used;
