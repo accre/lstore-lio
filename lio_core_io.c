@@ -316,7 +316,7 @@ int lio_load_file_handle_attrs(lio_config_t *lc, creds_t *creds, char *fname, ex
         sscanf(vino, XIDT, inode);
     } else {
         generate_ex_id(inode);
-        log_printf(0, "Missing inode generating a temp fake one! ino=" XIDT "\n", inode);
+        log_printf(0, "Missing inode generating a temp fake one! ino=" XIDT "\n", *inode);
     }
 
     return(0);
@@ -506,6 +506,7 @@ op_status_t lio_myopen_fn(void *arg, int id)
 cleanup:  //** We only make it here on a failure
     log_printf(1, "ERROR in cleanup! fname=%s\n", op->path);
 
+    if (exnode != NULL) free(exnode);
     exnode_destroy(fh->ex);
     exnode_exchange_destroy(exp);
     free(fd->path);

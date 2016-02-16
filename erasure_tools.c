@@ -918,9 +918,6 @@ erasure_plan_t *et_generate_plan(long long int file_size, int method,
             increase = (1.0*j) / file_size * 100;
             if (increase < 1) break;
         }
-
-//     increase = (1.0*j) / file_size * 100;
-//     log_printf(15, "Divisor=%d New size=%lld Orig size=%lld increase=%d (%f\%)\n", i, new_size, file_size, j, increase);
     }
 
     packet_size = packet_best;
@@ -929,7 +926,7 @@ erasure_plan_t *et_generate_plan(long long int file_size, int method,
     i = data_strips*w*packet_size*base_unit;
     j = new_size - file_size;
     increase = (1.0*j) / file_size * 100;
-    log_printf(15, "Best Divisor=%d New size=%lld Orig size=%lld increase=%d (%f\%)\n", i, new_size, file_size, j, increase);
+    log_printf(15, "Best Divisor=%d New size=%lld Orig size=%lld increase=%d (%f\%%)\n", i, new_size, file_size, j, increase);
 
     //** Store plan
     return(et_new_plan(method, strip_size, data_strips, parity_strips, w, packet_size, base_unit));

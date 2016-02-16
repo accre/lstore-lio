@@ -344,8 +344,8 @@ void make_test_indices()
 
 void compare_buffers_print(char *b1, char *b2, int len, ex_off_t offset)
 {
-    int i, k, mode, last, ok;
-    ex_off_t start, end;
+    int i, mode, last, ok;
+    ex_off_t start, end, k;
 
     mode = (b1[0] == b2[0]) ? 0 : 1;
     start = offset;
@@ -357,7 +357,7 @@ void compare_buffers_print(char *b1, char *b2, int len, ex_off_t offset)
             if ((b1[i] != b2[i]) || (last == i)) {
                 end = offset + i-1;
                 k = end - start + 1;
-                log_printf(0, "  MATCH : %d -> %d (%d bytes)\n", start, end, k);
+                log_printf(0, "  MATCH : " XOT " -> " XOT " (" XOT " bytes)\n", start, end, k);
 
                 start = offset + i;
                 mode = 1;
@@ -371,7 +371,7 @@ void compare_buffers_print(char *b1, char *b2, int len, ex_off_t offset)
                 if ((ok == 1) || (last == i)) {
                     end = offset + i-1;
                     k = end - start + 1;
-                    log_printf(0, "  DIFFER: %d -> %d (%d bytes)\n", start, end, k);
+                    log_printf(0, "  DIFFER: " XOT " -> " XOT " (" XOT " bytes)\n", start, end, k);
 
                     start = offset + i;
                     mode = 0;
@@ -413,7 +413,7 @@ void perform_final_verify()
     dt = apr_time_now();
 
     for (i=0; i<n; i++) {
-        log_printf(ll, "checking offset=" XOT "\n", off, ll);
+        log_printf(ll, "checking offset=" XOT "\n", off);
         memset(buffer, 'A', tile_bytes);
         ex_iovec_single(&iov, off, tile_bytes);
         flush_log();
@@ -680,6 +680,7 @@ void rw_test()
     cache_stats_t cs;
     int tbufsize = 10240;
     char text_buffer[tbufsize];
+    op_status_t status;
 
     //** Setup everything
     log_printf(0, "Generating tasks and random data\n");
@@ -764,13 +765,14 @@ void rw_test()
             gop = opque_waitany(q);
 
             slot = gop_get_private(gop);
+            status = gop_get_status(gop);
 
             if (gop_completed_successfully(gop) != OP_STATE_SUCCESS) {
                 fail++;
-                log_printf(0, "rw_test: FINISHED ERROR gid=%d status=%d mode=%d global=%d off=" XOT " len=" XOT "\n", gop_id(gop), gop_get_status(gop), slot->type, slot->global_index, slot->iov.offset, slot->iov.len);
+                log_printf(0, "rw_test: FINISHED ERROR gid=%d status=%d mode=%d global=%d off=" XOT " len=" XOT "\n", gop_id(gop), status.op_status, slot->type, slot->global_index, slot->iov.offset, slot->iov.len);
             } else {
                 success++;
-                log_printf(1, "rw_test: FINISHED SUCCESS gid=%d status=%d mode=%d global=%d off=" XOT " len=" XOT "\n", gop_id(gop), gop_get_status(gop), slot->type, slot->global_index, slot->iov.offset, slot->iov.len);
+                log_printf(1, "rw_test: FINISHED SUCCESS gid=%d status=%d mode=%d global=%d off=" XOT " len=" XOT "\n", gop_id(gop), status.op_status, slot->type, slot->global_index, slot->iov.offset, slot->iov.len);
             }
 
             if (slot->type == 0) {
@@ -795,13 +797,14 @@ void rw_test()
     //** Wait for the remaining tasks to complete
     while ((gop = opque_waitany(q)) != NULL) {
         slot = gop_get_private(gop);
+        status = gop_get_status(gop);
 
         if (gop_completed_successfully(gop) != OP_STATE_SUCCESS) {
             fail++;
-            log_printf(0, "rw_test: FINISHED ERROR gid=%d status=%d mode=%d global=%d off=" XOT " len=" XOT "\n", gop_id(gop), gop_get_status(gop), slot->type, slot->global_index, slot->iov.offset, slot->iov.len);
+            log_printf(0, "rw_test: FINISHED ERROR gid=%d status=%d mode=%d global=%d off=" XOT " len=" XOT "\n", gop_id(gop), status.op_status, slot->type, slot->global_index, slot->iov.offset, slot->iov.len);
         } else {
             success++;
-            log_printf(1, "rw_test: FINISHED SUCCESS gid=%d status=%d mode=%d global=%d off=" XOT " len=" XOT "\n", gop_id(gop), gop_get_status(gop), slot->type, slot->global_index, slot->iov.offset, slot->iov.len);
+            log_printf(1, "rw_test: FINISHED SUCCESS gid=%d status=%d mode=%d global=%d off=" XOT " len=" XOT "\n", gop_id(gop), status.op_status, slot->type, slot->global_index, slot->iov.offset, slot->iov.len);
         }
 
         if (slot->type == 0) {
