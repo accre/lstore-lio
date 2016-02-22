@@ -2771,6 +2771,7 @@ op_status_t cache_flush_range_func(void *arg, int id)
     cache_rw_op_t *cop = (cache_rw_op_t *)arg;
     cache_segment_t *s = (cache_segment_t *)cop->seg->priv;
     page_handle_t page[CACHE_MAX_PAGES_RETURNED];
+    ex_id_t sid;
     int status, n_pages, max_pages, total_pages;
     ex_off_t flush_id[3];
     Stack_t stack;
@@ -2882,13 +2883,14 @@ op_status_t cache_flush_range_func(void *arg, int id)
 
     //** Update that I'm finished
 finished:
+    sid = segment_id(cop->seg);  //** Get this here because after the unlock the segment may be deleted.
     segment_lock(cop->seg);
     s->flushing_count--;
     segment_unlock(cop->seg);
 
     dt = apr_time_now() - now;
     dt /= APR_USEC_PER_SEC;
-    log_printf(1, "END seg=" XIDT " lo=" XOT " hi=" XOT " flush_id=" XOT " total_pages=%d status=%d dt=%lf\n", segment_id(cop->seg), lo, hi, flush_id[2], total_pages, err, dt);
+    log_printf(1, "END seg=" XIDT " lo=" XOT " hi=" XOT " flush_id=" XOT " total_pages=%d status=%d dt=%lf\n", sid, lo, hi, flush_id[2], total_pages, err, dt);
     return((err == OP_STATE_SUCCESS) ? op_success_status : op_failure_status);
 }
 
