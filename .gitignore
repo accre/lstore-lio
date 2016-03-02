@@ -48,6 +48,7 @@ lio_fuse
 lio_rs
 lio_server
 ldiff
+warmer_query
 
 #These are generated via cmake using the *.in variants
 lio_version.c
