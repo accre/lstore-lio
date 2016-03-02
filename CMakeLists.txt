@@ -27,14 +27,16 @@ find_package(IBP REQUIRED)
 find_package(ZMQ REQUIRED)
 find_package(CZMQ REQUIRED)
 find_package(FUSE REQUIRED)
+find_package(LevelDB REQUIRED)
+
 include_directories(   
     ${JERASURE_INCLUDE_DIR} ${TOOLBOX_INCLUDE_DIR} ${GOP_INCLUDE_DIR}
-    ${IBP_INCLUDE_DIR} ${FUSE_INCLUDE_DIR} ${CZMQ_INCLUDE_DIR}
+    ${IBP_INCLUDE_DIR} ${FUSE_INCLUDE_DIR} ${CZMQ_INCLUDE_DIR} ${LEVELDB_INCLUDE_DIR}
 )
 
 list(APPEND LIBS
     ${IBP_LIBRARY} ${GOP_LIBRARY} ${CZMQ_LIBRARY} ${TOOLBOX_LIBRARY}
-    ${JERASURE_LIBRARY} ${ZMQ_LIBRARY} ${FUSE_LIBRARIES}
+    ${JERASURE_LIBRARY} ${ZMQ_LIBRARY} ${FUSE_LIBRARIES} ${LEVELDB_LIBRARY}
 )
 
 # common objects
@@ -47,7 +49,7 @@ set(LSTORE_PROJECT_OBJS
     osaz_fake.c raid4.c rs_query_base.c rs_remote_client.c rs_remote_server.c
     rs_simple.c rs_space.c segment_base.c segment_cache.c segment_file.c
     segment_jerasure.c segment_linear.c segment_log.c segment_lun.c
-    service_manager.c view_base.c
+    service_manager.c view_base.c warmer_helpers.c warmer_query.c
 )
     
 set(LSTORE_PROJECT_INCLUDES
@@ -70,7 +72,7 @@ set(LSTORE_PROJECT_EXECUTABLES
      arc_create lio_get lio_signature lio_warm lio_inspect lio_fsck lio_rs
      lio_server mk_linear ex_load ex_get ex_put ex_inspect ex_clone ex_rw_test
      log_test rs_test os_test os_fsck lio_touch lio_mkdir lio_rmdir lio_rm
-     lio_ln zadler32 ldiff
+     lio_ln warmer_query zadler32 ldiff
 )
 
 # Common functionality is stored here
