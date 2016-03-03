@@ -105,7 +105,7 @@ int run_lstore_copy(char *spath, char *dpath)
         printf("ERROR:  Should not be here!\n");
     }
     if (flist[0].dest_tuple.is_lio == 1) {
-        dtype = lioc_exists(flist[0].dest_tuple.lc, flist[0].dest_tuple.creds, flist[0].dest_tuple.path);
+        dtype = lio_exists(flist[0].dest_tuple.lc, flist[0].dest_tuple.creds, flist[0].dest_tuple.path);
     } else {
 
         dtype = os_local_filetype(flist[0].dest_tuple.path);
@@ -145,7 +145,7 @@ void process_restore(char *spath, char *dpath)
     tape_id = NULL;
 
     //check tape attribute
-    lioc_get_attr(lio_gc, lio_gc->creds, spath, NULL, ARCHIVE_TAPE_ATTRIBUTE, (void**) &tape_id, &attr_size);
+    lio_get_attr(lio_gc, lio_gc->creds, spath, NULL, ARCHIVE_TAPE_ATTRIBUTE, (void**) &tape_id, &attr_size);
     if (tape_id == NULL) {
         printf("ERROR: Could not find tape ID attribute for %s\n", spath);
     } else {

@@ -44,7 +44,7 @@ set(LSTORE_PROJECT_OBJS
     archive.c authn_fake.c cache_amp.c cache_base.c cache_lru.c
     cache_round_robin.c cred_default.c data_block.c ds_ibp.c erasure_tools.c
     ex3_compare.c ex3_global.c ex3_header.c ex_id.c exnode.c exnode_config.c
-    lio_config.c lio_core.c lio_core_io.c lio_core_os.c lio_fuse_core.c
+    lio_config.c lio_core_misc.c lio_core_io.c lio_core_os.c lio_fuse_core.c
     os_base.c os_file.c os_remote_client.c os_remote_server.c os_timecache.c
     osaz_fake.c raid4.c rs_query_base.c rs_remote_client.c rs_remote_server.c
     rs_simple.c rs_space.c segment_base.c segment_cache.c segment_file.c

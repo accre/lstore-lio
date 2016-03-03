@@ -44,7 +44,7 @@ http://www.accre.vanderbilt.edu
 
 void check_path(char *path)
 {
-    if (lioc_exists(lio_gc, lio_gc->creds, path) == 0) {
+    if (lio_exists(lio_gc, lio_gc->creds, path) == 0) {
         if (gop_sync_exec(gop_lio_create_object(lio_gc, lio_gc->creds, path, OS_OBJECT_DIR, NULL, NULL)) != OP_STATE_SUCCESS) {
             printf("ERROR: Failed to create %s!\n", path);
             exit(4);
@@ -101,7 +101,7 @@ int run_lstore_copy(char *dest, char *path, char *regex_path, char *regex_object
 
     //** Get the dest filetype/exists
     if (dtuple.is_lio == 1) {
-        dtype = lioc_exists(dtuple.lc, dtuple.creds, dtuple.path);
+        dtype = lio_exists(dtuple.lc, dtuple.creds, dtuple.path);
     } else {
         dtype = os_local_filetype(dtuple.path);
     }
@@ -182,7 +182,7 @@ int set_tapeid_attr(char *dest, char *server)
     int len = strlen(server) + strlen(dest) + 10;
     char attr[len];
     sprintf(attr, "%s %s", server, dest);
-    err = lioc_set_attr(lio_gc, lio_gc->creds, dest, NULL, ARCHIVE_TAPE_ATTRIBUTE, (char *) attr, strlen(attr));
+    err = lio_set_attr(lio_gc, lio_gc->creds, dest, NULL, ARCHIVE_TAPE_ATTRIBUTE, (char *) attr, strlen(attr));
     if (err != OP_STATE_SUCCESS) {
         res = 1;
         printf("ERROR: Failed to set tape id attribute on parent!:  %s\n", dest);
@@ -216,7 +216,8 @@ int set_tapeid_attr(char *dest, char *server)
                             if ((ftype & OS_OBJECT_FILE) == 1) {
                                 lio_path_tuple_t tuple;
                                 tuple = lio_path_resolve(lio_gc->auto_translate, fname);
-                                err = gop_sync_exec(lioc_truncate(&tuple, 0));
+                                fprintf(stderr, "The gop_lio_truncate() call needs to bve fixed!!!\n"); fflush(stderr); abort();
+                                err = gop_sync_exec(gop_lio_truncate(&tuple, 0));
                                 if (err != OP_STATE_SUCCESS) {
                                     printf("Failed to truncate %s\n", fname);
                                 }
