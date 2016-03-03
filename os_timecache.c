@@ -659,22 +659,38 @@ finished:
 void ostc_cache_move_object(object_service_fn_t *os, creds_t *creds, char *src_path, char *dest_path)
 {
     ostc_priv_t *ostc = (ostc_priv_t *)os->priv;
-    Stack_t stree, dtree;
-    ostcdb_object_t *obj;
+    Stack_t tree;
+    ostcdb_object_t *obj, *parent;
+    int i;
 
-    init_stack(&stree);
+    init_stack(&tree);
 
     OSTC_LOCK(ostc);
-    if (_ostc_cache_tree_walk(os, src_path, &stree, NULL, 0, OSTC_MAX_RECURSE) == 0) {
-        move_to_bottom(&stree);
-        obj = get_ele_data(&stree);
-        init_stack(&dtree);
-        _ostc_cache_tree_walk(os, src_path, &dtree, obj, obj->ftype, OSTC_MAX_RECURSE);  //** Do the walk and substitute
-        empty_stack(&dtree, 0);
+    if (_ostc_cache_tree_walk(os, src_path, &tree, NULL, 0, OSTC_MAX_RECURSE) == 0) {
+        move_to_bottom(&tree);
+        obj = get_ele_data(&tree);  //** Snag what we want to move
+
+        move_up(&tree);
+        parent = get_ele_data(&tree);
+        apr_hash_set(parent->objects, obj->fname, APR_HASH_KEY_STRING, NULL);  //** Delete it from it's old location
+
+        //** Peel off the new fname
+        for (i = strlen(dest_path); i>0; i--) {
+            if (dest_path[i] == '/') break;
+        }
+        if (dest_path[i] == '/') i++;
+        free(obj->fname);
+        obj->fname = strdup(&(dest_path[i]));
+log_printf(0, "src=%s dest=%s dname=%s\n", src_path, dest_path, obj->fname);
+
+        //** Do the walk and add it back
+        empty_stack(&tree, 0);
+        if (_ostc_cache_tree_walk(os, dest_path, &tree, obj, obj->ftype, OSTC_MAX_RECURSE) != 0) {
+            free_ostcdb_object(obj);  //**Failed to walk the destination path
+        }
     }
     OSTC_UNLOCK(ostc);
-
-    empty_stack(&stree, 0);
+    empty_stack(&tree, 0);
 }
 
 //***********************************************************************
