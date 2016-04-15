@@ -2009,6 +2009,7 @@ int _cache_ppages_flush_list(segment_t *seg, data_attr_t *da, Stack_t *pp_list)
     cop.boff = 0;
     cop.buf = &tbuf;
     cop.skip_ppages = 1;
+    cop.rw_hints = NULL;
 
     nbytes = 0;
     slot = 0;
