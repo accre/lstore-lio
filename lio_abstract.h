@@ -149,6 +149,7 @@ extern int lio_parallel_task_count;
 #define LIO_CREATE_MODE    8
 #define LIO_APPEND_MODE   16
 #define LIO_RW_MODE        (LIO_READ_MODE|LIO_WRITE_MODE)
+#define LIO_EXCL_MODE     32
 
 #define LIO_COPY_DIRECT   0
 #define LIO_COPY_INDIRECT 1
