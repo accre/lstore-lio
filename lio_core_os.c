@@ -33,6 +33,7 @@ http://www.accre.vanderbilt.edu
 #include "lio.h"
 #include "log.h"
 #include "string_token.h"
+#include "random.h"
 
 #define _n_fsck_keys 4
 static char *_fsck_keys[] = { "system.owner", "system.inode", "system.exnode", "system.exnode.size" };
@@ -570,12 +571,117 @@ op_generic_t *gop_lio_abort_regex_object_set_multiple_attrs(lio_config_t *lc, op
 }
 
 //*************************************************************************
+//  lio_is_dir_empty - Returns 0 if the directory is empty and a non-0 otherwise
+//*************************************************************************
+
+int lio_is_dir_empty(lio_config_t *lc, creds_t *creds, char *path)
+{
+    os_regex_table_t *rp;
+    os_object_iter_t *it;
+    char *p2;
+    int err, prefix_len;
+    char *fname;
+    int n = strlen(path);
+    int obj_types = OS_OBJECT_FILE|OS_OBJECT_DIR|OS_OBJECT_SYMLINK;
+
+    type_malloc(p2, char, n+3);
+    snprintf(p2, n+3, "%s/*", path);
+    rp = os_path_glob2regex(p2);
+
+    it = lio_create_object_iter(lc, creds, rp, NULL, obj_types, NULL, 0, NULL, 0);
+    if (it == NULL) {
+        log_printf(0, "ERROR: Failed with object_iter creation\n");
+        err = -1;
+        goto fail;
+    }
+
+    err = lio_next_object(lc, it, &fname, &prefix_len);
+    if (err != 0) free(fname);
+    lio_destroy_object_iter(lc, it);
+
+fail:
+    free(p2);
+
+    log_printf(5, "err=%d\n", err);
+    return(err);
+}
+
+//*************************************************************************
+// lio_move_object_fn - Renames an object.  Does the actual move operation
+//*************************************************************************
+
+op_status_t lio_move_object_fn(void *arg, int id)
+{
+    lio_mk_mv_rm_t *op = (lio_mk_mv_rm_t *)arg;
+    lio_mk_mv_rm_t rm;
+    char *dtmp = NULL;
+    op_status_t status;
+    int stype, dtype, n;
+    unsigned int ui;
+
+    stype = lio_exists(op->lc, op->creds, op->src_path);
+
+    //** Check if the dest exists. If it does we need to move it out of the
+    //** way for inode and data removal later
+    dtype = lio_exists(op->lc, op->creds, op->dest_path);
+
+    log_printf(15, "src=%s dest=%s stype=%d dtype=%d\n", op->src_path, op->dest_path, stype, dtype);
+    if (dtype != 0) {  //** The destination exists to lets make sure its compatible with a move
+        if (dtype & OS_OBJECT_DIR) { //** It's a directory
+            if ((stype & OS_OBJECT_DIR) == 0) {  //** Source is a file so mv will fail
+               status.op_status = OP_STATE_FAILURE; status.error_code = EISDIR;
+               return(status);
+            } else { // ** Make sure the dest directory is empty
+                if (lio_is_dir_empty(op->lc, op->creds, op->dest_path) != 0) {
+                   status.op_status = OP_STATE_FAILURE; status.error_code = ENOTEMPTY;
+                   return(status);
+                }
+            }
+        }
+
+        //** Now move it out of the way in case we fail
+        n = strlen(op->dest_path);
+        type_malloc(dtmp, char, n + 100);
+        dtmp[n+99] = '\0';
+        get_random(&ui, sizeof(ui));  //** MAke the random name
+        snprintf(dtmp, n+100, "%s.mv-%ud", op->dest_path, ui);
+        status = gop_sync_exec_status(os_move_object(op->lc->os, op->creds, op->dest_path, dtmp));
+        if (status.op_status != OP_STATE_SUCCESS) {  //** Temp move failed so kick out
+            free(dtmp);
+            return(status);
+        }
+    }
+
+    //** If we made it here the dest file or directory is safely stashed so we can do the rename
+    status = gop_sync_exec_status(os_move_object(op->lc->os, op->creds, op->src_path, op->dest_path));
+
+    //** Now clean up
+    if (status.op_status == OP_STATE_SUCCESS) { //** All is good so just remove the original dest if needed
+        if (dtmp != NULL) {
+            rm = *op; rm.src_path = dtmp;
+            status = lio_remove_object_fn(&rm, id);
+            free(dtmp);
+        }
+    }
+
+    return(status);
+}
+
+//*************************************************************************
 // gop_lio_move_object - Renames an object
 //*************************************************************************
 
 op_generic_t *gop_lio_move_object(lio_config_t *lc, creds_t *creds, char *src_path, char *dest_path)
 {
-    return(os_move_object(lc->os, creds, src_path, dest_path));
+    lio_mk_mv_rm_t *op = op;
+
+    type_malloc_clear(op, lio_mk_mv_rm_t, 1);
+
+    op->lc = lc;
+    op->creds = creds;
+    op->src_path = strdup(src_path);
+    op->dest_path = strdup(dest_path);
+    return(new_thread_pool_op(lc->tpc_unlimited, NULL, lio_move_object_fn, (void *)op, lio_free_mk_mv_rm, 1));
 }
 
 

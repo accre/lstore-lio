@@ -802,7 +802,7 @@ int lfs_rename(const char *oldname, const char *newname)
 {
     lio_fuse_t *lfs = lfs_get_context();
     lio_fuse_open_file_t *fop;
-    int err;
+    op_status_t status;
 
     log_printf(1, "oldname=%s newname=%s\n", oldname, newname);
     flush_log();
@@ -818,9 +818,9 @@ int lfs_rename(const char *oldname, const char *newname)
     lfs_unlock(lfs);
 
     //** Do the move
-    err = gop_sync_exec(gop_lio_move_object(lfs->lc, lfs->lc->creds, (char *)oldname, (char *)newname));
-    if (err != OP_STATE_SUCCESS) {
-        return(-EIO);
+    status = gop_sync_exec_status(gop_lio_move_object(lfs->lc, lfs->lc->creds, (char *)oldname, (char *)newname));
+    if (status.op_status != OP_STATE_SUCCESS) {
+        return((status.error_code != 0) ? -status.error_code : -EREMOTEIO);
     }
 
     return(0);
