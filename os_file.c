@@ -2516,22 +2516,51 @@ op_status_t osfile_move_object_fn(void *arg, int id)
 {
     osfile_mk_mv_rm_t *op = (osfile_mk_mv_rm_t *)arg;
     osfile_priv_t *osf = (osfile_priv_t *)op->os->priv;
-    int ftype;
+    int slot_src, slot_dest;
+    apr_thread_mutex_t *lock_src, *lock_dest;
+    int ftype, dtype;
+    unsigned int ui;
     char sfname[OS_PATH_MAX];
     char dfname[OS_PATH_MAX];
+    char dfname2[OS_PATH_MAX];
     char *dir, *base;
     int err;
 
     if ((osaz_object_remove(osf->osaz, op->creds, op->src_path) == 0) ||
             (osaz_object_create(osf->osaz, op->creds, op->dest_path) == 0)) return(op_failure_status);
 
+    //** Lock the individual objects based on their slot positions to avoid a deadlock
+    lock_src = osf_retrieve_lock(op->os, op->src_path, &slot_src);
+    lock_dest = osf_retrieve_lock(op->os, op->dest_path, &slot_dest);
+    if (slot_src < slot_dest) {
+        osf_obj_lock(lock_src);
+        osf_obj_lock(lock_dest);
+    } else if (slot_src > slot_dest) {
+        osf_obj_lock(lock_dest);
+        osf_obj_lock(lock_src);
+    } else {  //** Same slot so only need to lock one
+        lock_dest = NULL;
+        osf_obj_lock(lock_src);
+    }
+
     snprintf(sfname, OS_PATH_MAX, "%s%s", osf->file_path, op->src_path);
     snprintf(dfname, OS_PATH_MAX, "%s%s", osf->file_path, op->dest_path);
 
-    ftype = os_local_filetype(sfname);
+    // ** check if the dest already exists. IF so we ned to preserve it in case of an error
+    dtype = os_local_filetype(dfname);
+    if (dtype != 0) {
+       get_random(&ui, sizeof(ui));  //** MAke the random name
+       snprintf(dfname2, OS_PATH_MAX, "%s%s_dmv_%ud", osf->file_path, op->dest_path, ui);
+       err = rename(dfname, dfname2);  //** Move the dest file/dir for unwinding
+       if (err != 0) goto fail;
+    }
 
+    //** Attempt to move the main file entry
     err = rename(sfname, dfname);  //** Move the file/dir
     log_printf(15, "sfname=%s dfname=%s err=%d\n", sfname, dfname, err);
+
+    //** Figure out what we are trying to move
+    ftype = os_local_filetype(sfname);
 
     if ((ftype & (OS_OBJECT_FILE|OS_OBJECT_SYMLINK)) && (err==0)) { //** File move
         //** Also need to move the attributes entry
@@ -2546,8 +2575,19 @@ op_status_t osfile_move_object_fn(void *arg, int id)
 
         log_printf(15, "ATTR sfname=%s dfname=%s\n", sfname, dfname);
 
-        err = rename(sfname, dfname);
+        if (os_local_filetype(sfname) == 0)
+
+        err = rename(sfname, dfname);  //** Move the attribute directoy
+        if (err != 0) { //** Failed attr dir move so need to undo file entry
+           rename(dfname2, dfname);  //** restore the original dest file entry
+        } else {  //** Attr dir move was a success so go ahead and delete the original dest file entry
+           remove(dfname2);
+        }
     }
+
+fail:
+    osf_obj_unlock(lock_src);
+    if (lock_dest != NULL) osf_obj_unlock(lock_dest);
 
     return((err == 0) ? op_success_status : op_failure_status);
 }
