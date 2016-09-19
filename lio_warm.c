@@ -298,7 +298,6 @@ int main(int argc, char **argv)
     verbose = 0;
     do {
         start_option = i;
-
         if (strcmp(argv[i], "-db") == 0) { //** DB output base directory
             i++;
             db_base = argv[i];
@@ -325,7 +324,6 @@ int main(int argc, char **argv)
             parse_tag_file(argv[i]);
             i++;
         }
-
     } while ((start_option < i) && (i<argc));
     start_index = i;
 
@@ -373,6 +371,13 @@ int main(int argc, char **argv)
 
         slot = 0;
         while ((ftype = lio_next_object(tuple.lc, it, &fname, &prefix_len)) > 0) {
+            if (ftype & OS_OBJECT_SYMLINK) { //** We skip symlinked files
+                free(fname);
+                for (i=-0; i<3; i++) {
+                    if (v_size[i] > 0) free(vals[i]);
+                }
+                continue;
+            }
             w[slot].fname = fname;
             w[slot].exnode = vals[0];
             w[slot].creds = tuple.lc->creds;
