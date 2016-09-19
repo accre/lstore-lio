@@ -1584,6 +1584,13 @@ int osf_next_object(osf_object_iter_t *it, char **myfname, int *prefix_len)
                         } else { //** Off the static table or on the last level.  From here on all hits are matches. Just have to check ftype
                             i = os_local_filetype(fullname);
                             log_printf(15, " ftype=%d object_types=%d firstpass=%d\n", i, it->object_types, itl->firstpass);
+
+                            if (i & OS_OBJECT_SYMLINK) {  //** Check if we follow symlinks
+                                if ((it->object_types & OS_OBJECT_FOLLOW_SYMLINK) == 0) {
+                                    itl->firstpass = 0;  //** Force a match check since we won't follow the link
+                                }
+                            }
+
                             if (i & OS_OBJECT_FILE) {
                                 if ((i & it->object_types) > 0) {
                                     rmatch = (it->object_regex == NULL) ? 0 : ((obj_fixed != NULL) ? strcmp(itl->entry, obj_fixed) : regexec(it->object_preg, itl->entry, 0, NULL, 0));
@@ -1599,7 +1606,7 @@ int osf_next_object(osf_object_iter_t *it, char **myfname, int *prefix_len)
                                         return(i);
                                     }
                                 }
-                            } else if (i & OS_OBJECT_DIR) {  //** If a dir recurse down
+                            } else if (i & OS_OBJECT_DIR) {  //** It's a dir or a symlink that I should recurse down
                                 if (itl->firstpass == 1) { //** 1st pass so store the pos and recurse
                                     itl->firstpass = 0;              //** Flag it as already processed
                                     my_seekdir(itl->d, itl->prev_pos);  //** Move the dirp back one slot

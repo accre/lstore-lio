@@ -62,13 +62,14 @@ extern "C" {
 #define OS_FSCK_REMOVE    1   //** Removes the problem object
 #define OS_FSCK_REPAIR    2   //** Repairs the problem object
  
-#define OS_OBJECT_FILE         1  //** File object or attribute
-#define OS_OBJECT_DIR          2  //** Directory object
-#define OS_OBJECT_SYMLINK      4  //** A symlinked object or attribute
-#define OS_OBJECT_HARDLINK     8  //** A hard linked object
-#define OS_OBJECT_BROKEN_LINK 16  //** Signifies a broken link
-#define OS_OBJECT_VIRTUAL     32  //** A virtual attribute
-#define OS_OBJECT_ANY         63
+#define OS_OBJECT_FILE            1  //** File object or attribute
+#define OS_OBJECT_DIR             2  //** Directory object
+#define OS_OBJECT_SYMLINK         4  //** A symlinked object or attribute
+#define OS_OBJECT_HARDLINK        8  //** A hard linked object
+#define OS_OBJECT_BROKEN_LINK    16  //** Signifies a broken link
+#define OS_OBJECT_VIRTUAL        32  //** A virtual attribute
+#define OS_OBJECT_FOLLOW_SYMLINK 64  //** Follow symbolic links.  The default is to not
+#define OS_OBJECT_ANY            63
  
 #define OS_MODE_READ_IMMEDIATE  0
 #define OS_MODE_WRITE_IMMEDIATE 1
